@@ -62,3 +62,31 @@ re-derived after unblinding; secondary analyses are labeled as such.
 
 Farm raw per-seed JSONs are committed under `results/seedfarm/` in the
 public code repository; this file is committed before unblinding.
+
+## Addendum (pre-unblinding, E8 v2 and E5v2 protocols)
+
+Date: before any E8-v2 or E5v2 seed result exists. Committed to the public
+repository prior to analysis of these runs.
+
+### E8 (MuJoCo replication) — v1 invalid, v2 protocol fixed
+E8 v1 was invalidated before analysis on a task-calibration ground, not a
+statistical one: the v1 adapter mapped the property mu to Coulomb floor
+friction (mu*m*g up to ~12 N against an 8 N force cap), pinning the box;
+post-fault returns equalled pre-fault returns for every condition, i.e. the
+manipulation had no effect to recover from. The v1 per-seed files are archived
+under results/seedfarm/e8_v1_pinned_box/ (marked invalid; excluded from all
+statistics). The v2 protocol maps mu to the suite semantics (linear velocity
+drag via free-joint dof damping), k to contact stiffness (solref direct), and
+removes a velocity-zeroing side effect of property application. The v2
+pre-registered claims, identical to E3: zcond > dr and zcond > rma in
+post-fault return (paired, one-sided as in H1/H2), n=6 seeds.
+
+### E5v2 (hold_v2) — declared follow-up, not a substitution
+The original E5 hold task proved unlearnable at farm budget (trained policy
+below the passive floor; no approach gradient in the reward). E5's
+pre-registered seeds complete and are reported as-is (expected unresolved).
+E5v2 (hold_v2: approach curriculum added, verified learnable: return approx
+-1.2 vs passive floor -113 in the mechanism probe) runs as a *declared
+follow-up* with the same 4-condition matrix and analysis. Its role is
+generality of the property-inference advantage across task families, not
+salvage of E5.
