@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"   # nightly full suite
+  workflow_dispatch:
+
+jobs:
+  fast-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps (CPU torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scipy matplotlib pytest
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile check
+        run: python -m py_compile pec2/*.py seed_farm.py aggregate_farm.py
+      - name: Env mechanics (fast unit tests)
+        run: |
+          python -m pytest tests/test_pec2.py::test_env_shapes_and_dynamics \
+                            tests/test_pec2.py::test_env_partial_reset \
+                            tests/test_pec2.py::test_hold_v2_curriculum_floor \
+                            -q -p no:typeguard -x
+
+  full-suite:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps (CPU torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scipy matplotlib pytest
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Full test suite
+        run: python -m pytest tests/ -q -p no:typeguard
+      - name: CI-profile end-to-end pipeline
+        run: python -m pec2.run_all --profile ci --out results_ci
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-ci
+          path: results_ci/
