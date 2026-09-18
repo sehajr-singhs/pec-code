@@ -1,0 +1,1 @@
+farm: 4 jobs (['e7'] x 4 seeds), 2 workers x 2 threads, profile=farm

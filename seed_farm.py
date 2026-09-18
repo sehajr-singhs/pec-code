@@ -41,6 +41,10 @@ elif exp == "e5":
     r = E.exp5_hold_task(seeds=[seed], device="cpu", log=None, **p)
 elif exp == "e6":
     r = E.exp6_identifiability(seeds=[seed], device="cpu", log=None, **p)
+elif exp == "e7":
+    from pec2.exp7_clock_budget import run as e7run
+    r = e7run(seeds=[seed], device="cpu", log=None,
+              **{k: v for k, v in p.items() if k != "seeds"})
 else:
     raise SystemExit(f"unknown exp {exp}")
 r["wall_seconds"] = round(time.time() - t0, 1)

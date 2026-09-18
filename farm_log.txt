@@ -1,1 +1,9 @@
 farm: 40 jobs (['e3', 'e6', 'e0', 'e5'] x 10 seeds), 8 workers x 2 threads, profile=farm
+[1/33] e3 seed 6: ok (3255s elapsed)
+[2/33] e3 seed 7: ok (3270s elapsed)
+[3/33] e3 seed 3: ok (3278s elapsed)
+[4/33] e3 seed 1: ok (3283s elapsed)
+[5/34] e3 seed 5: ok (3283s elapsed)
+[6/33] e3 seed 0: ok (3288s elapsed)
+[7/33] e3 seed 2: ok (3303s elapsed)
+[8/33] e3 seed 4: ok (3308s elapsed)

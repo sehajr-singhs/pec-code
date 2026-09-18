@@ -51,6 +51,7 @@ PROFILES = {
         e4=dict(n=96, ppo_iters=12, envs_per_iter=2),
         e5=dict(n=96, ppo_iters=10, envs_per_iter=2),
         e6=dict(n=128, epochs=6, steps_per=30),
+        e7=dict(budgets=[250, 500, 1000, 2000]),
     ),
 }
 
