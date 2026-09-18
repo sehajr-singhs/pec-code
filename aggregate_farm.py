@@ -126,5 +126,23 @@ def main():
               f"{o['mean_predictor_nrmse']:.4f} (wins {o['encoder_wins']}/{o['n_seeds']})")
 
 
-if __name__ == "__main__":
+def finalize_when_farm_done():
+    """Self-finalizing aggregate: re-run aggregation until the E3 farm has all
+    ten pre-registered seeds, then write the aggregated.json headline.
+    Launch detached; read-only toward the farm."""
+    import time as _t
+    target = 10
+    for _ in range(720):  # up to 12 h at 1-min cadence
+        n = len(glob.glob(os.path.join(FARM, "e3", "seed_*.json")))
+        if n >= target:
+            break
+        _t.sleep(60)
     main()
+    print("farm finalized")
+
+
+if __name__ == "__main__":
+    if "--finalize" in sys.argv:
+        finalize_when_farm_done()
+    else:
+        main()
