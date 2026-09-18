@@ -90,7 +90,7 @@ def agg_e6(rows):
 
 
 AGGS = {"e0": agg_e0, "e3": agg_e3, "e5": agg_e5, "e5v2": agg_e5,
-        "e6": agg_e6}
+        "e6": agg_e6, "e8": agg_e3}  # E8 shares the E3 six-condition layout
 
 
 def main():

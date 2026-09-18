@@ -14,6 +14,7 @@ import torch.nn as nn
 
 from .envs import (PushWorld, sample_props, new_state, step, PROP_LOW, PROP_HIGH,
                    PROP_SCALE, PROP_DIM, DT, OBS_DIM, ACT_DIM)
+from .mj_envs import MjPushWorld  # E8: MuJoCo replication of PushWorld
 from .policy import (PropertyEncoder, TinyPolicy, ActorCritic, ppo_update,
                      RMAStudent)
 from .wm import (LatentODEWorldModel, DiscreteTickWorldModel, collect_dataset,
@@ -388,7 +389,7 @@ def _run_ppo_env(env, ac, enc, device, T=150, gamma=0.99, lam_gae=0.95,
 
 def exp3_fault_adaptation(seeds=range(6), n=256, device=DEV, log=print,
                           ppo_iters=12, envs_per_iter=1, task="push",
-                          enc_epochs=None, enc_steps=None):
+                          enc_epochs=None, enc_steps=None, world_cls=None):
     """Mid-episode actuator fault; the reviewer-proof condition matrix.
 
     Deployment fault: t=75, gain x0.5, tau x2 (unsignaled, fixed schedule).
@@ -414,11 +415,13 @@ def exp3_fault_adaptation(seeds=range(6), n=256, device=DEV, log=print,
     features the teacher's vector captured are what count).
     """
     log = log or (lambda *a, **k: None)
+    if world_cls is None:
+        world_cls = PushWorld
     n_cond = 6
     per_seed = []
     for s in seeds:
         set_seed(7 + s)
-        env = PushWorld(n=n, device=device, seed=7 + s, task=task)
+        env = world_cls(n=n, device=device, seed=7 + s, task=task)
         enc = PropertyEncoder(OBS_DIM, ACT_DIM).to(device)
         _train_encoder(env, enc, device, seed=s,
                        epochs=(enc_epochs if enc_epochs is not None else
@@ -435,7 +438,7 @@ def exp3_fault_adaptation(seeds=range(6), n=256, device=DEV, log=print,
             for it in range(ppo_iters):
                 ep_rets = []
                 for rep in range(envs_per_iter):
-                    e = PushWorld(n=n, device=device,
+                    e = world_cls(n=n, device=device,
                                   seed=9000 + s * 100 + it * 10 + rep,
                                   fault_at=(75 if with_rand_faults else None),
                                   rand_fault=with_rand_faults, task=task)
@@ -470,12 +473,13 @@ def exp3_fault_adaptation(seeds=range(6), n=256, device=DEV, log=print,
 
         # RMA stage 2: distill the teacher's normalized privileged vector
         student = RMAStudent(OBS_DIM, ACT_DIM).to(device)
-        _train_rma_student(acs["oracle"], student, s, n, device, task)
+        _train_rma_student(acs["oracle"], student, s, n, device, task,
+                           world_cls=world_cls)
         log(f"    E3 seed {s} distilled RMA student")
 
         # ---- deployment fault eval --------------------------------------
         def run_fault(ac, zmode, zsrc, seed):
-            e = PushWorld(n=n, device=device, seed=seed, fault_at=75,
+            e = world_cls(n=n, device=device, seed=seed, fault_at=75,
                           task=task)
             e.reset()
             hist_o, hist_a = None, None
@@ -832,7 +836,7 @@ def _run_ppo_env3(env, ac, zsrc, device, name, task="push", T=150,
 
 
 def _train_rma_student(teacher, student, seed, n, device, task="push",
-                       iters=6, lr=1e-3):
+                       iters=6, lr=1e-3, world_cls=None):
     """RMA stage-2 distillation: roll the FROZEN oracle-conditioned teacher in
     the training env WITH randomized faults, and regress the student's GRU
     output (from (o_t, a_{t-1}) history) onto the teacher's normalized
@@ -840,8 +844,10 @@ def _train_rma_student(teacher, student, seed, n, device, task="push",
     the *behaviorally sufficient* projection, not just the properties.
     """
     opt = torch.optim.Adam(student.parameters(), lr=lr)
+    if world_cls is None:
+        world_cls = PushWorld
     for it in range(iters):
-        e = PushWorld(n=n, device=device, seed=6600 + seed * 10 + it,
+        e = world_cls(n=n, device=device, seed=6600 + seed * 10 + it,
                       fault_at=75, rand_fault=True, task=task)
         e.reset()
         hist_o, hist_a = None, None
@@ -983,3 +989,23 @@ def exp4_cross_modal(seeds=range(5), n=256, device=DEV, log=print, ppo_iters=12,
     }
     return dict(name="cross_modal", n_seeds=len(per_seed), per_seed=per_seed,
                 stats=stats)
+
+
+def exp8_mujoco_replication(seeds=range(2), n=32, device=DEV, log=print,
+                            ppo_iters=8, envs_per_iter=1, task="push",
+                            enc_epochs=3, enc_steps=15):
+    """E8: the E3 condition matrix on MuJoCo's contact engine.
+
+    Identical PPO pipeline, encoder, RMA protocol, reward economics, fault
+    schedules, and evaluation as exp3_fault_adaptation -- ONLY the contact
+    solver differs (MuJoCo elliptic friction cones vs the suite's spring
+    contact). Any claim that replicates here is a property of the science,
+    not of the simulator. world_cls=MjPushWorld threads through exp3.
+    """
+    log = log or (lambda *a, **k: None)
+    r = exp3_fault_adaptation(
+        seeds=seeds, n=n, device=device, log=log, ppo_iters=ppo_iters,
+        envs_per_iter=envs_per_iter, task=task, enc_epochs=enc_epochs,
+        enc_steps=enc_steps, world_cls=MjPushWorld)
+    r["name"] = "mujoco_replication"
+    return r

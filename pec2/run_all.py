@@ -54,6 +54,8 @@ PROFILES = {
         e7=dict(budgets=[250, 500, 1000, 2000]),
         # hold_v2 follow-up farm: approach-curriculum variant (see PREREGISTRATION.md)
         e5v2=dict(n=96, ppo_iters=10, envs_per_iter=2, task="hold_v2"),
+        # MuJoCo replication of the E3 matrix (python-loop engine: keep n small)
+        e8=dict(n=32, ppo_iters=10, envs_per_iter=1, enc_epochs=4, enc_steps=15),
     ),
 }
 
