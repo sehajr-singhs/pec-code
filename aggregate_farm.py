@@ -89,7 +89,8 @@ def agg_e6(rows):
                 channels=chan)
 
 
-AGGS = {"e0": agg_e0, "e3": agg_e3, "e5": agg_e5, "e6": agg_e6}
+AGGS = {"e0": agg_e0, "e3": agg_e3, "e5": agg_e5, "e5v2": agg_e5,
+        "e6": agg_e6}
 
 
 def main():

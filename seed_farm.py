@@ -37,7 +37,7 @@ elif exp == "e1":
     r = E.exp1_gate_vs_noise(seeds=[seed], device="cpu", log=None, **p)
 elif exp == "e3":
     r = E.exp3_fault_adaptation(seeds=[seed], device="cpu", log=None, **p)
-elif exp == "e5":
+elif exp in ("e5", "e5v2"):
     r = E.exp5_hold_task(seeds=[seed], device="cpu", log=None, **p)
 elif exp == "e6":
     r = E.exp6_identifiability(seeds=[seed], device="cpu", log=None, **p)
@@ -91,6 +91,20 @@ def main():
         ap.error("exps required unless --status")
     seeds = parse_seeds(args.seeds)
     exps = args.exps.split(",")
+
+    # lockfile guard: duplicate launcher instances (chained .bat files) are
+    # harmless - first one to take the lock runs, the rest exit quietly
+    lock = os.path.join(args.out, "." + "_".join(exps) + "_seeds.lock")
+    try:
+        if os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 86400:
+            print(f"another farm instance holds {lock}; exiting")
+            return
+        os.makedirs(args.out, exist_ok=True)
+        with open(lock, "w") as f:
+            f.write(str(os.getpid()))
+    except OSError:
+        return
+
     jobs = [(e, s) for e in exps for s in seeds]
     print(f"farm: {len(jobs)} jobs ({exps} x {len(seeds)} seeds), "
           f"{args.workers} workers x {args.threads} threads, profile={args.profile}")
