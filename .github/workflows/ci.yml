@@ -27,8 +27,8 @@ jobs:
       - name: Env mechanics (fast unit tests)
         run: |
           python -m pytest tests/test_pec2.py::test_env_shapes_and_dynamics \
-                            tests/test_pec2.py::test_env_partial_reset \
-                            tests/test_pec2.py::test_hold_v2_curriculum_floor \
+                            tests/test_pec2.py::test_env_properties_change_physics \
+                            tests/test_pec2.py::test_rand_fault_schedule \
                             -q -p no:typeguard -x
 
   full-suite:
