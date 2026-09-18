@@ -1,0 +1,37 @@
+[E0] estimator quality (1 seeds)
+    mean normalized RMSE 0.284
+[E2] clock sweep (1 seeds)
+  E2 seed 0 done
+    latent-ODE MSE: {"1": {"1": 0.13663872083028158, "2": 0.14509696265061697}, "4": {"1": 0.14619464675585428, "2": 0.14852430919806162}}
+    fixed-tick MSE: {"1": {"1": 0.11285603046417236, "2": 0.12030776341756184}, "4": {"1": 0.12875166535377502, "2": 0.14343134065469107}}
+[E1] dream gate (1 seeds)
+    gen   0 mean +0.122 best +1.374
+    gen  10 mean +0.102 best +1.323
+    gen   0 mean +0.160 best +1.795
+    gen  10 mean +0.216 best +2.264
+    gen   0 mean +0.017 best +1.279
+    gen  10 mean -0.071 best +1.283
+  E1 seed 0: honest -1.117 noise -1.779 gate -0.993 (exploit 0.461 lam 0.088)
+    gate vs noise: {'diff': 0.7859414219856262, 'ci': [0.7859414219856262, 0.7859414219856262]}
+[E3] fault adaptation, 6-condition matrix (1 seeds)
+      blind it 0: return -0.56
+      blind it 3: return -0.48
+    E3 seed 0 trained blind
+      dr it 0: return -0.54
+      dr it 3: return -0.54
+    E3 seed 0 trained dr
+      zcond it 0: return -0.64
+      zcond it 3: return -0.54
+    E3 seed 0 trained zcond
+      zfault it 0: return -0.64
+      zfault it 3: return -0.65
+    E3 seed 0 trained zfault
+      oracle it 0: return -0.50
+      oracle it 3: return -0.26
+    E3 seed 0 trained oracle (RMA stage-1 teacher)
+    E3 seed 0 distilled RMA student
+  E3 seed 0: post blind -0.331 dr -0.349 zcond -0.299 zfault -0.465 rma -0.349 oracle -0.271
+    zcond vs blind: {'diff': 0.031986355781555176, 'ci': [0.031986355781555176, 0.031986355781555176]}
+    zcond vs rma:   {'diff': 0.050129473209381104, 'ci': [0.050129473209381104, 0.050129473209381104]}
+    dr vs blind:    {'diff': -0.01816791296005249, 'ci': [-0.01816791296005249, -0.01816791296005249]}
+[E4] cross-modal transfer (1 seeds)

@@ -1,0 +1,7 @@
+results/
+kaggle_out/
+kaggle_pull/
+*.log
+_farm_worker.py
+*.zip
+__pycache__/

@@ -1,0 +1,14 @@
+{
+  "id": "sehajrsingh/pec2-world-models-run",
+  "title": "pec2-world-models-run",
+  "code_file": "kaggle_pec2.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "dataset_sources": ["sehajrsingh/pec2-world-models-code"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

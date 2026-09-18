@@ -1,0 +1,27 @@
+[E0] estimator quality (1 seeds)
+    mean normalized RMSE 0.275
+[E2] clock sweep (1 seeds)
+  E2 seed 0 done
+    latent-ODE MSE: {"1": {"1": 0.17798617482185364, "2": 0.17654965072870255}, "4": {"1": 0.18993161618709564, "2": 0.20635471493005753}}
+    fixed-tick MSE: {"1": {"1": 0.1471182107925415, "2": 0.15252885222434998}, "4": {"1": 0.16607755422592163, "2": 0.18840990960597992}}
+[E1] dream gate (1 seeds)
+    gen   0 mean -0.016 best +1.303
+    gen  10 mean +0.021 best +1.108
+    gen   0 mean +0.006 best +1.217
+    gen  10 mean +0.278 best +1.227
+    gen   0 mean -0.246 best +0.509
+    gen  10 mean -0.198 best +0.748
+  E1 seed 0: honest -2.936 noise -3.597 gate -5.310 (exploit 0.116 lam 0.149)
+    gate vs noise: {'diff': -1.713010549545288, 'ci': [-1.713010549545288, -1.713010549545288]}
+[E3] fault adaptation (1 seeds)
+    E3 seed 0 trained blind
+    E3 seed 0 trained zcond
+    E3 seed 0 trained oracle
+  E3 seed 0: post blind -0.764 zcond -0.749 oracle -0.765
+    zcond vs blind: {'diff': 0.01553642749786377, 'ci': [0.01553642749786377, 0.01553642749786377]}
+[E4] cross-modal transfer (1 seeds)
+    E4 seed 0 trained blind
+    E4 seed 0 trained zcond
+  E4 seed 0: central -1.433/-1.438 edge -1.426/-1.464
+    zcond vs blind (edge): {'diff': -0.037929415702819824, 'ci': [-0.037929415702819824, -0.037929415702819824]}
+done in 413.8 s -> results_ci/
