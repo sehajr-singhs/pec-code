@@ -32,6 +32,12 @@ Tasks (cfg["task"]):
       gain) are directly behaviorally relevant. With max sustainable contact
       force stiff*40 N (capped at 60) and a_g = 1.2 m/s^2, roughly 18% of the
       property box cannot be perfectly held (heavy box + weak actuator).
+      NOTE: at small PPO budgets this reward has NO approach gradient (moving
+      toward the box pays nothing until contact), so policies undertrain to
+      below the passive-drift floor. "hold_v2" adds the push task's proven
+      curriculum (approach shaping + first-touch bonus) without changing what
+      the final competence is rewarded for.
+  "hold_v2": hold + 2.0x box-ee approach shaping + +1 first-touch bonus.
 """
 
 from __future__ import annotations
@@ -99,7 +105,7 @@ def new_state(n, device, gen=None, with_faults=False, fault_at=0, flat=False,
     if flat:
         box[:, 2] = 0.0
         goal[:, 2] = 0.0
-    if task == "hold":
+    if task in ("hold", "hold_v2"):
         goal = box.clone()
     D = 3
     st = dict(
@@ -158,10 +164,19 @@ def step(st, props, action, cfg=None, obs_noise=0.0, gen=None, flat=False):
     t1 = st["t"] + 1
     st = dict(st, t=t1)
     dist = (st["box"] - st["goal"]).norm(dim=-1)
-    if task == "hold":
+    if task in ("hold", "hold_v2"):
         # hold: be close to the goal every step; drift makes distance grow
         # without an active bracing policy
         r = -1.0 * dist - 0.005 * action.square().sum(-1)
+        if task == "hold_v2":
+            # approach curriculum (identical in spirit to push's first-touch):
+            # pay for closing the box-ee gap, then for first contact
+            box_ee = (st["box"] - st["ee"]).norm(dim=-1)
+            prev_box_ee = (st["box"] - st["boxv"] * DT - st["ee"]).norm(dim=-1)
+            touch = ((EE_R + BOX_HALF) - box_ee) > 0
+            r = r + 2.0 * (prev_box_ee - box_ee) \
+                + 1.0 * (touch & ~st["touched"]).float()
+            st = dict(st, touched=st["touched"] | touch)
         st = dict(st, success=st["success"] | (dist < 0.15))
     else:
         prev_dist = (st["box"] - st["boxv"] * DT - st["goal"]).norm(dim=-1)

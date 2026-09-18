@@ -170,7 +170,9 @@ def test_e4_smoke():
 
 
 def test_e5_hold_smoke():
-    """Second task family: hold task structure + drift actually displaces."""
+    """Second task family: hold task structure + drift actually displaces.
+    hold_v2 must be learnable: a short-trained policy must beat the passive
+    drift floor decisively (caught plain hold training BELOW the floor)."""
     from pec2.envs import PushWorld
     # drift sanity: passive env must end far from goal
     e = PushWorld(n=16, device=DEV, seed=0, task="hold")
@@ -179,11 +181,17 @@ def test_e5_hold_smoke():
         e.act(torch.zeros(16, 3))
     drift_dist = float((e.st["box"] - e.st["goal"]).norm(dim=-1).mean())
     assert drift_dist > 0.5, "hold-task drift is too weak to matter"
-    out = E.exp5_hold_task(seeds=[0], n=48, device=DEV, log=None, ppo_iters=2)
+    out = E.exp5_hold_task(seeds=[0], n=48, device=DEV, log=None, ppo_iters=2,
+                           task="hold_v2")
     p = out["per_seed"][0]
     for k in ("blind", "dr", "zcond", "oracle"):
         assert k in p
     assert np.isfinite(p["zcond"]) and np.isfinite(p["oracle"])
+    # floor check on the REAL episode dynamics: passive drift return ~ -113
+    # (sum of -dist over 150 steps); a trained policy must beat it
+    assert p["oracle"] > -60, (
+        f"hold_v2 not learnable at small budget: oracle return {p['oracle']:.1f} "
+        "near/below the passive drift floor")
 
 
 def test_e6_identifiability_structure():

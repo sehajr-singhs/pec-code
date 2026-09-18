@@ -546,12 +546,17 @@ def exp3_fault_adaptation(seeds=range(6), n=256, device=DEV, log=print,
 
 # ------------------------------------------------------------------- E5/E6
 def exp5_hold_task(seeds=range(4), n=256, device=DEV, log=print,
-                   ppo_iters=20, envs_per_iter=2):
+                   ppo_iters=20, envs_per_iter=2, task="hold"):
     """Second task family: hold the box at the goal against a constant drift.
     Same 5 properties, same protocol, different dynamics and reward - tests
     whether the property-conditioning result is task-general.
     Headline comparison: zcond vs dr (the two ways to handle hidden params
-    without inference); blind = lower bar, oracle = upper bar."""
+    without inference); blind = lower bar, oracle = upper bar.
+    task="hold_v2" adds the approach curriculum (see envs.py): REQUIRED for
+    small PPO budgets - the plain hold reward has no approach gradient, so
+    policies undertrain below the passive-drift floor (caught by an explicit
+    floor check: trained oracle returned -117 vs -113 passive at farm budget).
+    """
     log = log or (lambda *a, **k: None)
     # E5 reuses E3's machinery with task="hold" and a 4-condition matrix
     # (rma stage-2 is skipped here to keep budgets comparable; the mechanism
@@ -559,7 +564,7 @@ def exp5_hold_task(seeds=range(4), n=256, device=DEV, log=print,
     per_seed = []
     for s in seeds:
         set_seed(500 + s)
-        env = PushWorld(n=n, device=device, seed=500 + s, task="hold")
+        env = PushWorld(n=n, device=device, seed=500 + s, task=task)
         enc = PropertyEncoder(OBS_DIM, ACT_DIM).to(device)
         _train_encoder(env, enc, device, seed=s,
                        epochs=(2 if n <= 64 else 6),
@@ -577,16 +582,16 @@ def exp5_hold_task(seeds=range(4), n=256, device=DEV, log=print,
                     e = PushWorld(n=n, device=device,
                                   seed=9700 + s * 100 + it * 10 + rep,
                                   fault_at=(75 if faults else None),
-                                  rand_fault=faults, task="hold")
+                                  rand_fault=faults, task=task)
                     e.reset()
-                    buf, _ = _run_ppo_env3(e, ac, zsrc, device, name, "hold")
+                    buf, _ = _run_ppo_env3(e, ac, zsrc, device, name, task)
                     ppo_update(ac, buf)
             acs[name] = ac
             log(f"    E5 seed {s} trained {name}")
 
         def run_hold(ac, zsrc, seed):
             e = PushWorld(n=n, device=device, seed=seed, fault_at=75,
-                          task="hold")
+                          task=task)
             e.reset()
             hist_o, hist_a = None, None
             ret = torch.zeros(n, device=device)
