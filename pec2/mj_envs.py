@@ -47,17 +47,17 @@ XML = r"""
     <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6"/>
   </visual>
   <worldbody>
-    <geom name="floor" type="plane" size="4 4 0.1" friction="0.5 0.005 0.0001"
+    <geom name="floor" type="plane" size="4 4 0.1" friction="0.02 0.005 0.0001"
           condim="3" rgba="0.9 0.9 0.9 1"/>
     <body name="ee" pos="0 0 0.2">
       <freejoint/>
       <geom name="ee_geom" type="sphere" size="0.18" mass="2.0"
-            friction="0.5 0.005 0.0001" condim="3" rgba="0.2 0.5 0.8 1"/>
+            friction="0.02 0.005 0.0001" condim="3" rgba="0.2 0.5 0.8 1"/>
     </body>
     <body name="box" pos="0.8 0 0.25">
       <freejoint/>
       <geom name="box_geom" type="box" size="0.25 0.25 0.25" mass="3.0"
-            friction="0.5 0.005 0.0001" condim="3" rgba="0.8 0.4 0.2 1"/>
+            friction="0.02 0.005 0.0001" condim="3" rgba="0.8 0.4 0.2 1"/>
     </body>
   </worldbody>
   <actuator>
@@ -128,7 +128,17 @@ class MjPushWorld:
             mujoco.mj_forward(self.mjs[i], d)
 
     def _apply_props(self):
-        """Push the current property vector into the engines."""
+        """Push the current property vector into the engines.
+
+        Faithful mapping to the suite's dynamics (envs.py):
+          mu    -> linear velocity drag on the box (free-joint dof damping),
+                   NOT Coulomb floor friction (the suite's mu is -mu*v drag;
+                   floor friction stays a negligible constant 0.02 so heavy
+                   boxes are never pinned).
+          k     -> normal contact stiffness between ee and box (solref direct
+                   mode: negative = [stiffness, damping]).
+          mass  -> box body mass (inertia rescaled).
+        """
         p = _norm_props(self.props)
         for i in range(self.n):
             m, d = self.mjs[i], self.mjd[i]
@@ -136,14 +146,22 @@ class MjPushWorld:
             new_mass = float(p["mass"][i]) + 2.0     # + box shell mass
             m.body_mass[bid] = new_mass
             m.body_inertia[bid] = self._box_inertia0 * (new_mass / self._box_mass0)
+            # mu -> translational dof damping of the box free joint
+            jid = int(m.body_jntadr[bid])       # the box's (free)joint
+            dadr = int(m.jnt_dofadr[jid])
+            m.dof_damping[dadr + 0] = float(p["mu"][i])
+            m.dof_damping[dadr + 1] = float(p["mu"][i])
+            m.dof_damping[dadr + 2] = float(p["mu"][i])
+            m.dof_damping[dadr + 3] = 0.10           # mild angular damping
+            m.dof_damping[dadr + 4] = 0.10
+            m.dof_damping[dadr + 5] = 0.10
+            # k -> contact stiffness (direct solref on both paired geoms)
+            k_eff = 1500.0 * float(p["k"][i])
+            for gname in ("box_geom", "ee_geom"):
+                gid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, gname)
+                m.geom_solref[gid, 0] = -k_eff
+                m.geom_solref[gid, 1] = -80.0
             mujoco.mj_setConst(m, d)
-            gid_b = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "box_geom")
-            m.geom_friction[gid_b, 0] = float(p["mu"][i])
-            gid_e = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "ee_geom")
-            m.geom_solmix[gid_e] = float(1.0 + p["k"][i])
-            gid_f = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
-            m.geom_friction[gid_f, 0] = float(p["mu"][i])
-            d.qvel[:] = 0.0
 
     # ------------------------------------------------------- suite plumbing
     def _sample_faults(self):

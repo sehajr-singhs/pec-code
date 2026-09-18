@@ -47,8 +47,8 @@ def agg_e3(rows):
     conds = ("blind", "dr", "zcond", "zfault", "rma", "oracle")
     post = {c: np.array([p[c]["post"] for p in per]) for c in conds}
     pre = {c: np.array([p[c]["pre"] for p in per]) for c in conds}
-    pairs = ("zcond_vs_blind", "dr_vs_blind", "rma_vs_dr", "zfault_vs_dr",
-             "oracle_vs_rma", "zcond_vs_rma", "oracle_vs_zcond")
+    pairs = ("zcond_vs_blind", "zcond_vs_dr", "dr_vs_blind", "rma_vs_dr",
+             "zfault_vs_dr", "oracle_vs_rma", "zcond_vs_rma", "oracle_vs_zcond")
     stats = {}
     for pr in pairs:
         a, b = pr.split("_vs_")
@@ -64,9 +64,11 @@ def agg_e5(rows):
     per = [r["per_seed"][0] for r in rows]
     conds = ("blind", "dr", "zcond", "oracle")
     col = {c: np.array([p[c] for p in per]) for c in conds}
-    stats = {pr: paired_report(col[pr.split("_vs_")[0]], col[pr.split("_vs_")[2]])
-             for pr in ("zcond_vs_dr", "zcond_vs_blind", "dr_vs_blind",
-                        "oracle_vs_zcond")}
+    def pair(name):
+        a, b = name.split("_vs_")
+        return paired_report(col[a], col[b])
+    stats = {pr: pair(pr) for pr in ("zcond_vs_dr", "zcond_vs_blind",
+                                     "dr_vs_blind", "oracle_vs_zcond")}
     return dict(n_seeds=len(per),
                 mean={c: float(v.mean()) for c, v in col.items()},
                 ci={c: boot_ci(v) for c, v in col.items()},
@@ -95,7 +97,14 @@ AGGS = {"e0": agg_e0, "e3": agg_e3, "e5": agg_e5, "e5v2": agg_e5,
 
 def main():
     exps = sys.argv[1].split(",") if len(sys.argv) > 1 else list(AGGS)
+    path = os.path.join(FARM, "aggregated.json")
     out = {}
+    if os.path.exists(path):          # merge, never clobber earlier results
+        try:
+            with open(path) as f:
+                out = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            out = {}
     for e in exps:
         rows = load(e)
         if not rows:
@@ -103,7 +112,6 @@ def main():
             continue
         out[e] = AGGS[e](rows)
         print(f"{e}: {out[e]['n_seeds']} seeds aggregated")
-    path = os.path.join(FARM, "aggregated.json")
     with open(path, "w") as f:
         json.dump(out, f, indent=1)
     print(f"-> {path}")
